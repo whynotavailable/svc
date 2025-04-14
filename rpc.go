@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strings"
 )
 
 type RcpHandler = func(w http.ResponseWriter, r *http.Request)
 
 type RpcFunction struct {
-	Handler  RcpHandler
 	bodyType reflect.Type
 	meta     map[string]string
 }
@@ -29,24 +27,27 @@ func (f *RpcFunction) Meta(key string, value string) *RpcFunction {
 
 func (container *RpcContainer) AddFunction(key string, handler RcpHandler) *RpcFunction {
 	function := RpcFunction{
-		Handler: handler,
-		meta:    map[string]string{},
+		meta: map[string]string{},
 	}
-	container.functions[key] = &function
+	container.functions[key] = function
+
+	container.mux.HandleFunc(fmt.Sprintf("POST /%s", key), handler)
 
 	return &function
 }
 
 type RpcContainer struct {
-	functions  map[string]*RpcFunction
+	functions  map[string]RpcFunction
 	docs       map[string]FunctionDoc
 	middlewars []Middleware
+	mux        http.ServeMux
 }
 
 func NewRpcContainer() RpcContainer {
 	return RpcContainer{
-		functions:  map[string]*RpcFunction{},
+		functions:  map[string]RpcFunction{},
 		middlewars: []Middleware{},
+		mux:        http.ServeMux{},
 	}
 }
 
@@ -56,29 +57,13 @@ func (container *RpcContainer) SetupMux(mux *http.ServeMux, prefix string) error
 }
 
 func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		if container.docs != nil && r.URL.Path == "/_info" {
-			WriteJson(w, container.docs)
-			return
-		} else {
-			WriteErrorNotFound(w)
+	for _, middleware := range container.middlewars {
+		err := middleware(r)
+		if err != nil {
+			WriteError(w, err)
 			return
 		}
 	}
 
-	if r.Method != http.MethodPost {
-		WriteErrorBadRequest(w)
-		return
-	}
-
-	functionKey := strings.TrimLeft(r.URL.Path, "/")
-
-	f, ok := container.functions[functionKey]
-
-	if !ok {
-		WriteErrorNotFound(w)
-		return
-	}
-
-	f.Handler(w, r)
+	container.mux.ServeHTTP(w, r)
 }

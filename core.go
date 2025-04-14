@@ -45,6 +45,14 @@ func WriteJson(w http.ResponseWriter, obj any) error {
 	return nil
 }
 
+func WriteText(w http.ResponseWriter, text string) error {
+	w.Header().Add("Content-Type", "plain/text")
+	w.WriteHeader(200)
+	w.Write([]byte(text))
+
+	return nil
+}
+
 func WriteError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprintln(w, err)
