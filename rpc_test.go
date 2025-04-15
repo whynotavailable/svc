@@ -119,7 +119,7 @@ func TestBody(t *testing.T) {
 	}
 }
 
-func ExampleRpcContainer_AddFunction() {
+func ExampleRpcContainer() {
 	rpcContainer := svc.NewRpcContainer()
 
 	rpcContainer.AddFunction("hello", func(w http.ResponseWriter, r *http.Request) {
