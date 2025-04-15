@@ -42,8 +42,8 @@ type RpcContainer struct {
 	mux        http.ServeMux
 }
 
-func NewRpcContainer() RpcContainer {
-	return RpcContainer{
+func NewRpcContainer() *RpcContainer {
+	return &RpcContainer{
 		functions:  map[string]RpcFunction{},
 		middlewars: []Middleware{},
 		mux:        http.ServeMux{},

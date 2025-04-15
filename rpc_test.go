@@ -1,6 +1,7 @@
 package svc_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -43,7 +44,7 @@ func TestSimple(t *testing.T) {
 	})
 
 	rpcContainer.GenerateDocs()
-	svc.SetupMux(testMux, "/rpc", &rpcContainer)
+	svc.SetupContainer(testMux, "/rpc", rpcContainer)
 
 	{
 		resp := CallTest(testMux, httptest.NewRequest("POST", "/rpc/hello", nil))
@@ -63,6 +64,58 @@ func TestSimple(t *testing.T) {
 		resp := CallTest(testMux, httptest.NewRequest("GET", "/rpc/_info", nil))
 
 		Assert(t, resp.Code == http.StatusOK, "docs call not ok", resp.Code)
+	}
+}
+
+func TestBody(t *testing.T) {
+	testMux := http.NewServeMux()
+	rpcContainer := svc.NewRpcContainer()
+
+	rpcContainer.AddFunction("hello", func(w http.ResponseWriter, r *http.Request) {
+		body, err := svc.ReadJson[svc.SimpleMessage](r)
+		if err != nil {
+			svc.WriteErrorWithCode(w, err, http.StatusBadRequest)
+			return
+		}
+
+		svc.WriteJson(w, svc.SimpleMessage{
+			Message: body.Message,
+		})
+	}).BodyType(svc.SimpleMessage{})
+
+	rpcContainer.GenerateDocs()
+	svc.SetupContainer(testMux, "/rpc", rpcContainer)
+
+	{
+		// Good body test
+		requestBody := svc.SimpleMessage{
+			Message: "Cali",
+		}
+		requestBytes, err := json.Marshal(requestBody)
+		NoError(t, err)
+
+		resp := CallTest(testMux, httptest.NewRequest("POST", "/rpc/hello", bytes.NewBuffer(requestBytes)))
+
+		Assert(t, resp.Code == http.StatusOK, "RPC call not ok", resp.Code)
+		rawData, err := io.ReadAll(resp.Body)
+		NoError(t, err)
+
+		var data svc.SimpleMessage
+		err = json.Unmarshal(rawData, &data)
+		NoError(t, err)
+
+		Assert(t, data.Message == requestBody.Message, "Message not correct", data.Message)
+	}
+
+	{
+		// Bad body test
+		requestBody := "string"
+		requestBytes, err := json.Marshal(requestBody)
+		NoError(t, err)
+
+		resp := CallTest(testMux, httptest.NewRequest("POST", "/rpc/hello", bytes.NewBuffer(requestBytes)))
+
+		Assert(t, resp.Code == http.StatusBadRequest, "RPC call not bad request", resp.Code)
 	}
 }
 
@@ -89,7 +142,7 @@ func ExampleRpcContainer_AddFunction() {
 
 	rpcContainer.GenerateDocs()
 
-	svc.SetupMux(http.DefaultServeMux, "/rpc", &rpcContainer)
+	svc.SetupContainer(http.DefaultServeMux, "/rpc", rpcContainer)
 
 	http.ListenAndServe("0.0.0.0:3456", nil)
 }
