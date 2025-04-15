@@ -45,23 +45,25 @@ func TestSimple(t *testing.T) {
 	rpcContainer.GenerateDocs()
 	svc.SetupMux(testMux, "/rpc", &rpcContainer)
 
-	var resp *httptest.ResponseRecorder
+	{
+		resp := CallTest(testMux, httptest.NewRequest("POST", "/rpc/hello", nil))
 
-	resp = CallTest(testMux, httptest.NewRequest("POST", "/rpc/hello", nil))
+		Assert(t, resp.Code == http.StatusOK, "RPC call not ok", resp.Code)
+		rawData, err := io.ReadAll(resp.Body)
+		NoError(t, err)
 
-	Assert(t, resp.Code == http.StatusOK, "RPC call not ok", resp.Code)
-	rawData, err := io.ReadAll(resp.Body)
-	NoError(t, err)
+		var data svc.SimpleMessage
+		err = json.Unmarshal(rawData, &data)
+		NoError(t, err)
 
-	var data svc.SimpleMessage
-	err = json.Unmarshal(rawData, &data)
-	NoError(t, err)
+		Assert(t, data.Message == "dave", "Message not dave", data.Message)
+	}
 
-	Assert(t, data.Message == "dave", "Message not dave", data.Message)
+	{
+		resp := CallTest(testMux, httptest.NewRequest("GET", "/rpc/_info", nil))
 
-	resp = CallTest(testMux, httptest.NewRequest("GET", "/rpc/_info", nil))
-
-	Assert(t, resp.Code == http.StatusOK, "docs call not ok", resp.Code)
+		Assert(t, resp.Code == http.StatusOK, "docs call not ok", resp.Code)
+	}
 }
 
 func ExampleRpcContainer_AddFunction() {
