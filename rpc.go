@@ -38,7 +38,6 @@ func (container *RpcContainer) AddFunction(key string, handler RcpHandler) *RpcF
 
 type RpcContainer struct {
 	functions  map[string]RpcFunction
-	docs       map[string]FunctionDoc
 	middlewars []Middleware
 	mux        http.ServeMux
 }
@@ -49,11 +48,6 @@ func NewRpcContainer() RpcContainer {
 		middlewars: []Middleware{},
 		mux:        http.ServeMux{},
 	}
-}
-
-func (container *RpcContainer) SetupMux(mux *http.ServeMux, prefix string) error {
-	mux.Handle(fmt.Sprintf("%s/", prefix), http.StripPrefix(prefix, container))
-	return nil
 }
 
 func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {

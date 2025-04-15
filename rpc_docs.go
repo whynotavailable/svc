@@ -8,7 +8,7 @@ import (
 // This will be used to generate and deal with function metadata.
 
 func (c *RpcContainer) GenerateDocs() {
-	c.docs = map[string]FunctionDoc{}
+	docs := map[string]FunctionDoc{}
 
 	for key, f := range c.functions {
 		var bodyInfo any = nil
@@ -17,11 +17,15 @@ func (c *RpcContainer) GenerateDocs() {
 			bodyInfo = GenerateSchema(f.bodyType)
 		}
 
-		c.docs[key] = FunctionDoc{
+		docs[key] = FunctionDoc{
 			Body: bodyInfo,
 			Meta: f.meta,
 		}
 	}
+
+	c.mux.HandleFunc("GET /_info", func(w http.ResponseWriter, r *http.Request) {
+		WriteJson(w, docs)
+	})
 }
 
 type FunctionDoc struct {

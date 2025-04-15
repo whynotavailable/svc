@@ -74,3 +74,7 @@ func WriteErrorBadRequest(w http.ResponseWriter) {
 type SimpleMessage struct {
 	Message string `json:"message"`
 }
+
+func SetupMux(mux *http.ServeMux, prefix string, handler http.Handler) {
+	mux.Handle(fmt.Sprintf("%s/", prefix), http.StripPrefix(prefix, handler))
+}
