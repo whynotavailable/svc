@@ -3,6 +3,7 @@ package svc
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 )
 
@@ -10,6 +11,10 @@ type ProxyContainer struct {
 	Client     *http.Client
 	Target     string
 	middlewars []Middleware
+}
+
+func (c *ProxyContainer) AddMiddleware(f Middleware) {
+	c.middlewars = append(c.middlewars, f)
 }
 
 func NewProxyContainer(target string) *ProxyContainer {
@@ -22,6 +27,13 @@ func NewProxyContainer(target string) *ProxyContainer {
 var hopByHopHeaders map[string]bool = nil
 
 func (container *ProxyContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	err := ExecuteMiddleware(container.middlewars, r)
+	if err != nil {
+		slog.Error("middleware error", slog.String("err", err.Error()))
+		WriteError(w, err)
+		return
+	}
+
 	url := fmt.Sprintf("%s%s", container.Target, r.URL.String())
 	req, err := http.NewRequest(r.Method, url, r.Body)
 

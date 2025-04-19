@@ -2,6 +2,7 @@ package svc
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"reflect"
 )
@@ -46,6 +47,10 @@ type RpcContainer struct {
 	mux        http.ServeMux
 }
 
+func (c *RpcContainer) AddMiddleware(f Middleware) {
+	c.middlewars = append(c.middlewars, f)
+}
+
 func NewRpcContainer() *RpcContainer {
 	return &RpcContainer{
 		functions:  map[string]RpcFunction{},
@@ -55,12 +60,11 @@ func NewRpcContainer() *RpcContainer {
 }
 
 func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, middleware := range container.middlewars {
-		err := middleware(r)
-		if err != nil {
-			WriteError(w, err)
-			return
-		}
+	err := ExecuteMiddleware(container.middlewars, r)
+	if err != nil {
+		slog.Error("middleware error", slog.String("err", err.Error()))
+		WriteError(w, err)
+		return
 	}
 
 	container.mux.ServeHTTP(w, r)

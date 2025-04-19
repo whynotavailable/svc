@@ -1,12 +1,19 @@
 package svc
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+)
 
 // Real simple http container that acts as a regular mux but with middleware support
 
 type HttpContainer struct {
 	middlewars []Middleware
 	Mux        http.ServeMux
+}
+
+func (c *HttpContainer) AddMiddleware(f Middleware) {
+	c.middlewars = append(c.middlewars, f)
 }
 
 func NewHttpContainer() *HttpContainer {
@@ -25,12 +32,11 @@ func (container *HttpContainer) HandleFunc(pattern string, handler HandlerFunc) 
 }
 
 func (container *HttpContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, middleware := range container.middlewars {
-		err := middleware(r)
-		if err != nil {
-			WriteError(w, err)
-			return
-		}
+	err := ExecuteMiddleware(container.middlewars, r)
+	if err != nil {
+		slog.Error("middleware error", slog.String("err", err.Error()))
+		WriteError(w, err)
+		return
 	}
 
 	container.Mux.ServeHTTP(w, r)
