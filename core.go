@@ -81,13 +81,14 @@ func SetupContainer(mux *http.ServeMux, prefix string, handler http.Handler) {
 	mux.Handle(fmt.Sprintf("%s/", prefix), http.StripPrefix(prefix, handler))
 }
 
-func LoggingMiddlewareOld(r *http.Request) error {
-	slog.Info("Request", slog.String("method", r.Method), slog.String("path", r.URL.String()))
-	return nil
-}
-
 type LoggingMiddleware struct {
 	Inner http.Handler
+}
+
+func NewLoggingMiddleware(inner http.Handler) *LoggingMiddleware {
+	return &LoggingMiddleware{
+		Inner: inner,
+	}
 }
 
 func (l *LoggingMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -101,8 +102,8 @@ type GenericMiddleware struct {
 	PreRequest func(*http.Request)
 }
 
-func NewMiddleware(inner http.Handler, preRequest func(*http.Request)) GenericMiddleware {
-	return GenericMiddleware{
+func NewMiddleware(inner http.Handler, preRequest func(*http.Request)) *GenericMiddleware {
+	return &GenericMiddleware{
 		Inner:      inner,
 		PreRequest: preRequest,
 	}
