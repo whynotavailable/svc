@@ -16,6 +16,14 @@ func NewHttpContainer() *HttpContainer {
 	}
 }
 
+func (container *HttpContainer) Handle(pattern string, handler http.Handler) {
+	container.Mux.Handle(pattern, handler)
+}
+
+func (container *HttpContainer) HandleFunc(pattern string, handler HandlerFunc) {
+	container.Mux.HandleFunc(pattern, handler)
+}
+
 func (container *HttpContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, middleware := range container.middlewars {
 		err := middleware(r)

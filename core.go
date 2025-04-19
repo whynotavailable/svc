@@ -10,6 +10,9 @@ import (
 
 type Middleware = func(r *http.Request) error
 
+// HandlerFunc is exactly the same as a standard function handler, just in type alias form
+type HandlerFunc = func(w http.ResponseWriter, r *http.Request)
+
 func ReadJson[T any](r *http.Request) (T, error) {
 	var obj T
 
