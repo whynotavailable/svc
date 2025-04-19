@@ -2,7 +2,6 @@ package svc
 
 import (
 	"fmt"
-	"log/slog"
 	"net/http"
 	"reflect"
 )
@@ -42,30 +41,17 @@ func (container *RpcContainer) AddFunction(key string, handler HandlerFunc) *Rpc
 
 // RpcContainer is the handler for RPC style functions.
 type RpcContainer struct {
-	functions  map[string]RpcFunction
-	middlewars []Middleware
-	mux        http.ServeMux
-}
-
-func (c *RpcContainer) AddMiddleware(f Middleware) {
-	c.middlewars = append(c.middlewars, f)
+	functions map[string]RpcFunction
+	mux       http.ServeMux
 }
 
 func NewRpcContainer() *RpcContainer {
 	return &RpcContainer{
-		functions:  map[string]RpcFunction{},
-		middlewars: []Middleware{},
-		mux:        http.ServeMux{},
+		functions: map[string]RpcFunction{},
+		mux:       http.ServeMux{},
 	}
 }
 
 func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	err := ExecuteMiddleware(container.middlewars, r)
-	if err != nil {
-		slog.Error("middleware error", slog.String("err", err.Error()))
-		WriteError(w, err)
-		return
-	}
-
 	container.mux.ServeHTTP(w, r)
 }

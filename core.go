@@ -9,19 +9,6 @@ import (
 	"net/http"
 )
 
-type Middleware = func(r *http.Request) error
-
-func ExecuteMiddleware(middlewares []Middleware, r *http.Request) error {
-	for _, middleware := range middlewares {
-		err := middleware(r)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // HandlerFunc is exactly the same as a standard function handler, just in type alias form
 type HandlerFunc = func(w http.ResponseWriter, r *http.Request)
 
@@ -94,7 +81,37 @@ func SetupContainer(mux *http.ServeMux, prefix string, handler http.Handler) {
 	mux.Handle(fmt.Sprintf("%s/", prefix), http.StripPrefix(prefix, handler))
 }
 
-func LoggingMiddleware(r *http.Request) error {
+func LoggingMiddlewareOld(r *http.Request) error {
 	slog.Info("Request", slog.String("method", r.Method), slog.String("path", r.URL.String()))
 	return nil
+}
+
+type LoggingMiddleware struct {
+	Inner http.Handler
+}
+
+func (l *LoggingMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Request", slog.String("method", r.Method), slog.String("path", r.URL.String()))
+
+	l.Inner.ServeHTTP(w, r)
+}
+
+type GenericMiddleware struct {
+	Inner      http.Handler
+	PreRequest func(*http.Request)
+}
+
+func NewMiddleware(inner http.Handler, preRequest func(*http.Request)) GenericMiddleware {
+	return GenericMiddleware{
+		Inner:      inner,
+		PreRequest: preRequest,
+	}
+}
+
+func (l *GenericMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if l.PreRequest != nil {
+		l.PreRequest(r)
+	}
+
+	l.Inner.ServeHTTP(w, r)
 }
