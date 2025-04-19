@@ -7,9 +7,16 @@ import (
 )
 
 type ProxyContainer struct {
-	Client     http.Client
+	Client     *http.Client
 	Target     string
 	middlewars []Middleware
+}
+
+func NewProxyContainer(target string) *ProxyContainer {
+	return &ProxyContainer{
+		Target: target,
+		Client: http.DefaultClient,
+	}
 }
 
 var hopByHopHeaders map[string]bool = nil
@@ -17,6 +24,12 @@ var hopByHopHeaders map[string]bool = nil
 func (container *ProxyContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("%s%s", container.Target, r.URL.String())
 	req, err := http.NewRequest(r.Method, url, r.Body)
+
+	if r.Body != nil {
+		// Likely don't need this but doing it anyway.
+		defer r.Body.Close()
+	}
+
 	if err != nil {
 		WriteError(w, err)
 		return

@@ -21,7 +21,7 @@ func TestProxySimple(t *testing.T) {
 
 	proxy := svc.ProxyContainer{
 		Target: "https://google.com",
-		Client: http.Client{
+		Client: &http.Client{
 			Transport: tripper,
 		},
 	}
@@ -36,4 +36,12 @@ func TestProxySimple(t *testing.T) {
 	asserts.Eq(t, http.StatusOK, rr.Code, "proxy status")
 
 	asserts.Eq(t, 1, counter, "Counter")
+}
+
+func ExampleProxyContainer() {
+	container := svc.NewProxyContainer("https://target.com")
+
+	svc.SetupContainer(http.DefaultServeMux, "/proxy", container)
+
+	http.ListenAndServe("0.0.0.0:3456", nil)
 }
