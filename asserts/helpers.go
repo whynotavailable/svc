@@ -62,3 +62,10 @@ func NotNil(t *testing.T, obj any, extras ...any) {
 		throw(t, msg, extras...)
 	}
 }
+
+func Nil(t *testing.T, obj any, extras ...any) {
+	if obj != nil {
+		msg := "got not nil"
+		throw(t, msg, extras...)
+	}
+}
