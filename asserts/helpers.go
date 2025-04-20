@@ -55,3 +55,10 @@ func NoError(t *testing.T, err error) {
 		t.FailNow()
 	}
 }
+
+func NotNil(t *testing.T, obj any, extras ...any) {
+	if obj == nil {
+		msg := "got nil"
+		throw(t, msg, extras...)
+	}
+}

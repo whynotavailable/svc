@@ -32,7 +32,7 @@ func (container *RpcContainer) AddFunction(key string, handler HandlerFunc) *Rpc
 	function := RpcFunction{
 		meta: map[string]string{},
 	}
-	container.functions[key] = function
+	container.functions[key] = &function
 
 	container.mux.HandleFunc(fmt.Sprintf("POST /%s", key), handler)
 
@@ -41,13 +41,13 @@ func (container *RpcContainer) AddFunction(key string, handler HandlerFunc) *Rpc
 
 // RpcContainer is the handler for RPC style functions.
 type RpcContainer struct {
-	functions map[string]RpcFunction
+	functions map[string]*RpcFunction
 	mux       http.ServeMux
 }
 
 func NewRpcContainer() *RpcContainer {
 	return &RpcContainer{
-		functions: map[string]RpcFunction{},
+		functions: map[string]*RpcFunction{},
 		mux:       http.ServeMux{},
 	}
 }
