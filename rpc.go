@@ -3,51 +3,57 @@ package svc
 import (
 	"fmt"
 	"net/http"
-	"reflect"
+
+	"github.com/invopop/jsonschema"
 )
 
 // RpcFunction contains building blocks for documentation for functions.
 type RpcFunction struct {
-	bodyType reflect.Type
-	meta     map[string]string
+	Name         string
+	InputObject  any
+	OutputObject any
+	Meta         map[string]string
+	Function     HandlerFunc
 }
 
-// BodyType allows you to set the type of a function body.
-// Accepts an object to reflect.
-func (f *RpcFunction) BodyType(obj any) *RpcFunction {
-	f.bodyType = reflect.TypeOf(obj)
-
-	return f
-}
-
-// Meta sets a key and a value for functions. This is included in the documentation endpoint.
-func (f *RpcFunction) Meta(key string, value string) *RpcFunction {
-	f.meta[key] = value
-
-	return f
+type RpcFunctionInfo struct {
+	Name         string
+	InputSchema  *jsonschema.Schema
+	OutputSchema *jsonschema.Schema
+	Meta         map[string]string
 }
 
 // AddFunction adds a new function to the container. Returns a pointer to the function for chaining.
-func (container *RpcContainer) AddFunction(key string, handler HandlerFunc) *RpcFunction {
-	function := RpcFunction{
-		meta: map[string]string{},
+func (container *RpcContainer) AddFunction(function RpcFunction) *RpcFunction {
+	info := RpcFunctionInfo{
+		Name: function.Name,
+		Meta: function.Meta,
 	}
-	container.functions[key] = &function
 
-	container.mux.HandleFunc(fmt.Sprintf("POST /%s", key), handler)
+	if function.InputObject != nil {
+		info.InputSchema = jsonschema.Reflect(function.InputObject)
+	}
+
+	if function.OutputObject != nil {
+		info.OutputSchema = jsonschema.Reflect(function.OutputObject)
+	}
+
+	container.functions[function.Name] = info
+
+	container.mux.HandleFunc(fmt.Sprintf("POST /%s", function.Name), function.Function)
 
 	return &function
 }
 
 // RpcContainer is the handler for RPC style functions.
 type RpcContainer struct {
-	functions map[string]*RpcFunction
+	functions map[string]RpcFunctionInfo
 	mux       http.ServeMux
 }
 
 func NewRpcContainer() *RpcContainer {
 	return &RpcContainer{
-		functions: map[string]*RpcFunction{},
+		functions: map[string]RpcFunctionInfo{},
 		mux:       http.ServeMux{},
 	}
 }
