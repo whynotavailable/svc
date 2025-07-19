@@ -13,7 +13,7 @@ type RpcFunction struct {
 	InputObject  any
 	OutputObject any
 	Meta         map[string]string
-	Function     HandlerFunc
+	Function     func(w http.ResponseWriter, r *http.Request)
 }
 
 type RpcFunctionInfo struct {
@@ -29,12 +29,20 @@ func (f *RpcFunction) Info() RpcFunctionInfo {
 		Meta: f.Meta,
 	}
 
+	reflector := jsonschema.Reflector{
+		ExpandedStruct: true,
+	}
+
 	if f.InputObject != nil {
-		info.InputSchema = jsonschema.Reflect(f.InputObject)
+		info.InputSchema = reflector.Reflect(f.InputObject)
 	}
 
 	if f.OutputObject != nil {
-		info.OutputSchema = jsonschema.Reflect(f.OutputObject)
+		info.OutputSchema = reflector.Reflect(f.OutputObject)
+	}
+
+	if info.Meta == nil {
+		info.Meta = map[string]string{}
 	}
 
 	return info
@@ -47,6 +55,12 @@ func (container *RpcContainer) AddFunction(function RpcFunction) *RpcFunction {
 	container.mux.HandleFunc(fmt.Sprintf("POST /%s", function.Name), function.Function)
 
 	return &function
+}
+
+func (container *RpcContainer) SetupDocs() {
+	container.mux.HandleFunc("GET /_info", func(w http.ResponseWriter, r *http.Request) {
+		WriteJson(w, container.functions)
+	})
 }
 
 // RpcContainer is the handler for RPC style functions.
