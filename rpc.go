@@ -7,18 +7,13 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-// RpcFunction contains building blocks for documentation for functions.
-type RpcFunction struct {
-	Key string
-	// Input is an object representing the input type
+type RpcFunctionDocs struct {
 	Input any
 	// Output is an object representing the output type
-	Output   any
-	Meta     map[string]string
-	Function func(w http.ResponseWriter, r *http.Request)
-}
+	Output any
 
-type GenericFunction[T any] struct{}
+	Meta map[string]string
+}
 
 type RpcFunctionInfo struct {
 	InputSchema  *jsonschema.Schema `json:"input"`
@@ -26,7 +21,7 @@ type RpcFunctionInfo struct {
 	Meta         map[string]string  `json:"meta"`
 }
 
-func (f *RpcFunction) Info() RpcFunctionInfo {
+func (f *RpcFunctionDocs) Info() RpcFunctionInfo {
 	info := RpcFunctionInfo{
 		Meta: f.Meta,
 	}
@@ -50,13 +45,14 @@ func (f *RpcFunction) Info() RpcFunctionInfo {
 	return info
 }
 
-// AddFunction adds a new function to the container. Returns a pointer to the function for chaining.
-func (container *RpcContainer) AddFunction(function RpcFunction) *RpcFunction {
-	container.functions[function.Key] = function.Info()
+func (container *RpcContainer) Add(key string, docs *RpcFunctionDocs, function func(w http.ResponseWriter, r *http.Request)) {
+	if docs != nil {
+		container.functions[key] = docs.Info()
+	} else {
+		container.functions[key] = nil
+	}
 
-	container.mux.HandleFunc(fmt.Sprintf("POST /%s", function.Key), function.Function)
-
-	return &function
+	container.mux.HandleFunc(fmt.Sprintf("POST /%s", key), function)
 }
 
 func (container *RpcContainer) SetupDocs() {
@@ -67,13 +63,13 @@ func (container *RpcContainer) SetupDocs() {
 
 // RpcContainer is the handler for RPC style functions.
 type RpcContainer struct {
-	functions map[string]RpcFunctionInfo
+	functions map[string]any
 	mux       http.ServeMux
 }
 
 func NewRpcContainer() *RpcContainer {
 	return &RpcContainer{
-		functions: map[string]RpcFunctionInfo{},
+		functions: map[string]any{},
 		mux:       http.ServeMux{},
 	}
 }

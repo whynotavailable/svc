@@ -10,15 +10,14 @@ import (
 	"github.com/whynotavailable/svc/asserts"
 )
 
+func exampleFunc(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("hi"))
+}
+
 func TestRpcContainer(t *testing.T) {
 	rpc := svc.NewRpcContainer()
 
-	rpc.AddFunction(svc.RpcFunction{
-		Key: "hi",
-		Function: func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("hi"))
-		},
-	})
+	rpc.Add("hi", nil, exampleFunc)
 
 	{
 		recorder := httptest.NewRecorder()
@@ -43,15 +42,4 @@ func TestRpcContainer(t *testing.T) {
 
 		asserts.Eq(t, recorder.Code, http.StatusNotFound)
 	}
-}
-
-func ExampleRpcContainer() {
-	rpc := svc.NewRpcContainer()
-
-	rpc.AddFunction(svc.RpcFunction{
-		Key: "hi",
-		Function: func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("hi"))
-		},
-	})
 }
