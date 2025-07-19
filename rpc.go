@@ -9,23 +9,25 @@ import (
 
 // RpcFunction contains building blocks for documentation for functions.
 type RpcFunction struct {
-	Name         string
-	InputObject  any
-	OutputObject any
-	Meta         map[string]string
-	Function     func(w http.ResponseWriter, r *http.Request)
+	Key string
+	// Input is an object representing the input type
+	Input any
+	// Output is an object representing the output type
+	Output   any
+	Meta     map[string]string
+	Function func(w http.ResponseWriter, r *http.Request)
 }
 
+type GenericFunction[T any] struct{}
+
 type RpcFunctionInfo struct {
-	Name         string
-	InputSchema  *jsonschema.Schema
-	OutputSchema *jsonschema.Schema
-	Meta         map[string]string
+	InputSchema  *jsonschema.Schema `json:"input"`
+	OutputSchema *jsonschema.Schema `json:"output"`
+	Meta         map[string]string  `json:"meta"`
 }
 
 func (f *RpcFunction) Info() RpcFunctionInfo {
 	info := RpcFunctionInfo{
-		Name: f.Name,
 		Meta: f.Meta,
 	}
 
@@ -33,12 +35,12 @@ func (f *RpcFunction) Info() RpcFunctionInfo {
 		ExpandedStruct: true,
 	}
 
-	if f.InputObject != nil {
-		info.InputSchema = reflector.Reflect(f.InputObject)
+	if f.Input != nil {
+		info.InputSchema = reflector.Reflect(f.Input)
 	}
 
-	if f.OutputObject != nil {
-		info.OutputSchema = reflector.Reflect(f.OutputObject)
+	if f.Output != nil {
+		info.OutputSchema = reflector.Reflect(f.Output)
 	}
 
 	if info.Meta == nil {
@@ -50,9 +52,9 @@ func (f *RpcFunction) Info() RpcFunctionInfo {
 
 // AddFunction adds a new function to the container. Returns a pointer to the function for chaining.
 func (container *RpcContainer) AddFunction(function RpcFunction) *RpcFunction {
-	container.functions[function.Name] = function.Info()
+	container.functions[function.Key] = function.Info()
 
-	container.mux.HandleFunc(fmt.Sprintf("POST /%s", function.Name), function.Function)
+	container.mux.HandleFunc(fmt.Sprintf("POST /%s", function.Key), function.Function)
 
 	return &function
 }

@@ -14,7 +14,7 @@ func TestRpcContainer(t *testing.T) {
 	rpc := svc.NewRpcContainer()
 
 	rpc.AddFunction(svc.RpcFunction{
-		Name: "hi",
+		Key: "hi",
 		Function: func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("hi"))
 		},
@@ -49,7 +49,7 @@ func ExampleRpcContainer() {
 	rpc := svc.NewRpcContainer()
 
 	rpc.AddFunction(svc.RpcFunction{
-		Name: "hi",
+		Key: "hi",
 		Function: func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("hi"))
 		},
