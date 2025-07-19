@@ -23,22 +23,26 @@ type RpcFunctionInfo struct {
 	Meta         map[string]string
 }
 
+func (f *RpcFunction) Info() RpcFunctionInfo {
+	info := RpcFunctionInfo{
+		Name: f.Name,
+		Meta: f.Meta,
+	}
+
+	if f.InputObject != nil {
+		info.InputSchema = jsonschema.Reflect(f.InputObject)
+	}
+
+	if f.OutputObject != nil {
+		info.OutputSchema = jsonschema.Reflect(f.OutputObject)
+	}
+
+	return info
+}
+
 // AddFunction adds a new function to the container. Returns a pointer to the function for chaining.
 func (container *RpcContainer) AddFunction(function RpcFunction) *RpcFunction {
-	info := RpcFunctionInfo{
-		Name: function.Name,
-		Meta: function.Meta,
-	}
-
-	if function.InputObject != nil {
-		info.InputSchema = jsonschema.Reflect(function.InputObject)
-	}
-
-	if function.OutputObject != nil {
-		info.OutputSchema = jsonschema.Reflect(function.OutputObject)
-	}
-
-	container.functions[function.Name] = info
+	container.functions[function.Name] = function.Info()
 
 	container.mux.HandleFunc(fmt.Sprintf("POST /%s", function.Name), function.Function)
 
