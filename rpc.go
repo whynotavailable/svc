@@ -55,12 +55,6 @@ func (container *RpcContainer) Add(key string, docs *RpcFunctionDocs, function f
 	container.mux.HandleFunc(fmt.Sprintf("POST /%s", key), function)
 }
 
-func (container *RpcContainer) SetupDocs() {
-	container.mux.HandleFunc("GET /_info", func(w http.ResponseWriter, r *http.Request) {
-		WriteJson(w, container.functions)
-	})
-}
-
 // RpcContainer is the handler for RPC style functions.
 type RpcContainer struct {
 	functions map[string]any
@@ -75,5 +69,10 @@ func NewRpcContainer() *RpcContainer {
 }
 
 func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		WriteJson(w, container.functions)
+		return
+	}
+
 	container.mux.ServeHTTP(w, r)
 }
