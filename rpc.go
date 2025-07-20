@@ -45,12 +45,8 @@ func (f *RpcFunctionDocs) Info() RpcFunctionInfo {
 	return info
 }
 
-func (container *RpcContainer) Add(key string, docs *RpcFunctionDocs, function func(w http.ResponseWriter, r *http.Request)) {
-	if docs != nil {
-		container.functions[key] = docs.Info()
-	} else {
-		container.functions[key] = nil
-	}
+func (container *RpcContainer) Add(key string, docs RpcFunctionDocs, function func(w http.ResponseWriter, r *http.Request)) {
+	container.functions[key] = docs.Info()
 
 	container.mux.HandleFunc(fmt.Sprintf("POST /%s", key), function)
 }

@@ -17,7 +17,7 @@ func exampleFunc(w http.ResponseWriter, r *http.Request) {
 func TestRpcContainer(t *testing.T) {
 	rpc := svc.NewRpcContainer()
 
-	rpc.Add("hi", nil, exampleFunc)
+	rpc.Add("hi", svc.RpcFunctionDocs{}, exampleFunc)
 
 	{
 		recorder := httptest.NewRecorder()
