@@ -57,8 +57,9 @@ func (container *RpcContainer) Add(key string, docs *RpcFunctionDocs, function f
 
 // RpcContainer is the handler for RPC style functions.
 type RpcContainer struct {
-	functions map[string]any
-	mux       http.ServeMux
+	NotFoundHandler http.HandlerFunc
+	functions       map[string]any
+	mux             http.ServeMux
 }
 
 func NewRpcContainer() *RpcContainer {
@@ -74,5 +75,11 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	container.mux.ServeHTTP(w, r)
+	handler, pattern := container.mux.Handler(r)
+
+	if pattern == "" && container.NotFoundHandler != nil {
+		container.NotFoundHandler.ServeHTTP(w, r)
+	} else {
+		handler.ServeHTTP(w, r)
+	}
 }
