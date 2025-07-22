@@ -57,14 +57,14 @@ type simpleResponse[T any] struct {
 	Value T `json:"value"`
 }
 
-var addition = svc.RpcFunction{
-	Key: "addition",
-	Docs: svc.NewFunctionInfo(
+var addition = svc.NewFunction(
+	"addition",
+	svc.NewFunctionInfo(
 		additionInput{},
 		simpleResponse[int]{},
 		nil,
 	),
-	Function: func(w http.ResponseWriter, r *http.Request) {
+	func(w http.ResponseWriter, r *http.Request) {
 		body, err := svc.ReadJson[additionInput](r)
 		if err != nil {
 			svc.WriteErrorBadRequest(w)
@@ -74,7 +74,7 @@ var addition = svc.RpcFunction{
 			Value: body.A + body.B,
 		})
 	},
-}
+)
 
 func ExampleRpcContainer() {
 	rpc := svc.NewRpcContainer()
