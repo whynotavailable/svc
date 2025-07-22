@@ -7,6 +7,10 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
+var Reflector = jsonschema.Reflector{
+	ExpandedStruct: true,
+}
+
 type RpcFunctionInfo struct {
 	InputSchema  *jsonschema.Schema `json:"input"`
 	OutputSchema *jsonschema.Schema `json:"output"`
@@ -24,16 +28,12 @@ func NewFunctionInfo(input any, output any, meta any) RpcFunctionInfo {
 		Meta: meta,
 	}
 
-	reflector := jsonschema.Reflector{
-		ExpandedStruct: true,
-	}
-
 	if input != nil {
-		info.InputSchema = reflector.Reflect(input)
+		info.InputSchema = Reflector.Reflect(input)
 	}
 
 	if output != nil {
-		info.OutputSchema = reflector.Reflect(output)
+		info.OutputSchema = Reflector.Reflect(output)
 	}
 
 	return info
