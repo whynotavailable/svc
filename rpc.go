@@ -12,13 +12,13 @@ type RpcFunctionDocs struct {
 	// Output is an object representing the output type
 	Output any
 
-	Meta map[string]string
+	Meta any
 }
 
 type RpcFunctionInfo struct {
 	InputSchema  *jsonschema.Schema `json:"input"`
 	OutputSchema *jsonschema.Schema `json:"output"`
-	Meta         map[string]string  `json:"meta"`
+	Meta         any                `json:"meta"`
 }
 
 func (f *RpcFunctionDocs) Info() RpcFunctionInfo {
@@ -36,10 +36,6 @@ func (f *RpcFunctionDocs) Info() RpcFunctionInfo {
 
 	if f.Output != nil {
 		info.OutputSchema = reflector.Reflect(f.Output)
-	}
-
-	if info.Meta == nil {
-		info.Meta = map[string]string{}
 	}
 
 	return info
