@@ -11,14 +11,17 @@ import (
 	"github.com/whynotavailable/svc/asserts"
 )
 
-func exampleFunc(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hi"))
+var example = svc.RpcFunction{
+	Key: "hi",
+	Function: func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hi"))
+	},
 }
 
 func TestRpcContainer(t *testing.T) {
 	rpc := svc.NewRpcContainer()
 
-	rpc.Add("hi", svc.RpcFunctionDocs{}, exampleFunc)
+	rpc.Add(example)
 
 	{
 		recorder := httptest.NewRecorder()
@@ -54,26 +57,29 @@ type simpleResponse[T any] struct {
 	Value T `json:"value"`
 }
 
-func addition(w http.ResponseWriter, r *http.Request) {
-	body, err := svc.ReadJson[additionInput](r)
-	if err != nil {
-		svc.WriteErrorBadRequest(w)
-	}
+var addition = svc.RpcFunction{
+	Key: "addition",
+	Docs: svc.NewFunctionInfo(
+		additionInput{},
+		simpleResponse[int]{},
+		nil,
+	),
+	Function: func(w http.ResponseWriter, r *http.Request) {
+		body, err := svc.ReadJson[additionInput](r)
+		if err != nil {
+			svc.WriteErrorBadRequest(w)
+		}
 
-	svc.WriteJson(w, simpleResponse[int]{
-		Value: body.A + body.B,
-	})
-}
-
-var additionDocs = svc.RpcFunctionDocs{
-	Input:  additionInput{},
-	Output: simpleResponse[int]{},
+		svc.WriteJson(w, simpleResponse[int]{
+			Value: body.A + body.B,
+		})
+	},
 }
 
 func ExampleRpcContainer() {
 	rpc := svc.NewRpcContainer()
 
-	rpc.Add("addition", additionDocs, addition)
+	rpc.Add(addition)
 
 	err := http.ListenAndServe("127.0.0.1:3333", rpc)
 	if err != nil {

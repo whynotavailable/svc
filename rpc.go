@@ -7,44 +7,50 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-type RpcFunctionDocs struct {
-	Input any
-	// Output is an object representing the output type
-	Output any
-
-	Meta any
-}
-
 type RpcFunctionInfo struct {
 	InputSchema  *jsonschema.Schema `json:"input"`
 	OutputSchema *jsonschema.Schema `json:"output"`
 	Meta         any                `json:"meta"`
 }
 
-func (f *RpcFunctionDocs) Info() RpcFunctionInfo {
+type RpcFunction struct {
+	Key      string
+	Docs     any
+	Function func(w http.ResponseWriter, r *http.Request)
+}
+
+func NewFunctionInfo(input any, output any, meta any) RpcFunctionInfo {
 	info := RpcFunctionInfo{
-		Meta: f.Meta,
+		Meta: meta,
 	}
 
 	reflector := jsonschema.Reflector{
 		ExpandedStruct: true,
 	}
 
-	if f.Input != nil {
-		info.InputSchema = reflector.Reflect(f.Input)
+	if input != nil {
+		info.InputSchema = reflector.Reflect(input)
 	}
 
-	if f.Output != nil {
-		info.OutputSchema = reflector.Reflect(f.Output)
+	if output != nil {
+		info.OutputSchema = reflector.Reflect(output)
 	}
 
 	return info
 }
 
-func (container *RpcContainer) Add(key string, docs RpcFunctionDocs, function func(w http.ResponseWriter, r *http.Request)) {
-	container.functions[key] = docs.Info()
+func NewFunction(key string, docs any, function func(w http.ResponseWriter, r *http.Request)) RpcFunction {
+	return RpcFunction{
+		Key:      key,
+		Docs:     docs,
+		Function: function,
+	}
+}
 
-	container.mux.HandleFunc(fmt.Sprintf("POST /%s", key), function)
+func (container *RpcContainer) Add(function RpcFunction) {
+	container.functions[function.Key] = function.Docs
+
+	container.mux.HandleFunc(fmt.Sprintf("POST /%s", function.Key), function.Function)
 }
 
 // RpcContainer is the handler for RPC style functions.
